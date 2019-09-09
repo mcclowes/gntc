@@ -1,0 +1,46 @@
+{
+  "name": "gntc",
+  "description": "Genetic Algorithm implementation of JS",
+  "version": "0.1.1",
+  "author": "Max Clayton Clowes <maxcc@me.com>",
+  "main": "build/index.html",
+  "babel": {
+    "presets": [
+      "mcclowes"
+    ]
+  },
+  "dependencies": {
+    "autobind-decorator": "^2.4.0"
+  },
+  "devDependencies": {
+    "enzyme": "^3.10.0",
+    "jest": "^23.6.0",
+    "mcclowes-scripts": "^0.5.3",
+    "pre-commit": "^1.2.2"
+  },
+  "eslintConfig": {
+    "extends": "mcclowes"
+  },
+  "jest": {
+    "coveragePathIgnorePatterns": [
+      "fixtures"
+    ]
+  },
+  "keywords": [
+    "genetic",
+    "ai",
+    "algorithm"
+  ],
+  "license": "MIT",
+  "pre-commit": [
+    "format"
+  ],
+  "scripts": {
+    "build": "mcclowes-scripts build",
+    "format": "mcclowes-scripts format -- --fix",
+    "precommit": "npm run format",
+    "start": "mcclowes-scripts start",
+    "test": "jest",
+    "test:watch": "jest --watch --runInBand --bail"
+  }
+}
