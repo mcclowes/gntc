@@ -1,7 +1,10 @@
 import PropTypes from "prop-types";
-import { debugPrint } from "../../utils";
 
-const DEBUG = false;
+const DEBUG = process.env.DEBUG === true;
+
+const debugPrint = (...toPrint) => {
+  return DEBUG ? console.log(toPrint) : null;
+};
 
 class gntc {
   constructor(props) {
