@@ -3,7 +3,7 @@ import { debugPrint } from "../../utils";
 
 const DEBUG = false;
 
-class Genetic {
+class gntc {
   constructor(props) {
     const {
       list,
@@ -175,7 +175,7 @@ class Genetic {
   }
 }
 
-Genetic.propTypes = {
+gntc.propTypes = {
   iterations: PropTypes.number,
   list: PropTypes.array,
   seeds: PropTypes.number,
@@ -188,4 +188,4 @@ Genetic.propTypes = {
   })
 };
 
-export default Genetic;
+export default gntc;
