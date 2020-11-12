@@ -60,10 +60,8 @@ const createGenetic = (freeHit = false, freeTransfers = 0) => {
 		select: SELECT,
 		startingSolution: startingSolution,
 		utilities: {
-			fitness: freeHit 
-				? fitness.byFreeHitScore 
-				: () => { return fitness.byPPG(freeTransfers); },
-			crossover: crossover.random,
+			fitness: (solution, comparison) => fitness.byNumericalProperty(freeHit, freeTransfers)(solution, comparison),
+			crossover: crossover.randomised,
 			generateChoice: generate.choice.primary,
 			restrictions: [
 				test.price,
@@ -82,6 +80,7 @@ describe("fitness", () => {
 
 	describe("createSeed", () => {
 		it("generates a team", () => {
+			console.log(GeneticModel.createSeed())
 			expect(GeneticModel.createSeed().choice).toHaveLength(SELECT);
 			expect(GeneticModel.createSeed().choice[0].id).toBeTruthy();
 
