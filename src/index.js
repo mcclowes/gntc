@@ -1,5 +1,7 @@
 import PropTypes from "prop-types";
 
+import regeneratorRuntime from "regenerator-runtime";
+
 const DEBUG = process.env.DEBUG === true;
 
 const debugPrint = (...toPrint) => {
