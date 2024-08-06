@@ -35,7 +35,6 @@ const defaultGenerateChoice = (select, candidates) => {
 
 const createGntc = (props) => {
   const {
-    candidates,
     utilities: {
       fitness = defaultFitness,
       crossover,
@@ -43,6 +42,7 @@ const createGntc = (props) => {
       generateChoice = defaultGenerateChoice,
       restrictions
     } = {},
+    candidates,
     select,
     config: {
       populationSize,

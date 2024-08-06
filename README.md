@@ -67,7 +67,6 @@ console.log('Best result:', finalResult);
 
 ```js
 const {
-	candidates,
 	?utilities: {
 		fitness,
 		crossover,
@@ -75,6 +74,7 @@ const {
 		generateChoice,
 		restrictions,
 	},
+  candidates,
 	select,
 	config: {
 		populationSize,
@@ -86,6 +86,8 @@ const {
 ```
 
 ### candidates
+
+[Optional]
 
 An array of items from which to create a *choice*.
 
