@@ -67,8 +67,8 @@ console.log('Best result:', finalResult);
 
 ```js
 const {
-	options,
-	utilities: {
+	candidates,
+	?utilities: {
 		fitness,
 		crossover,
 		mutate,
@@ -80,18 +80,42 @@ const {
 		populationSize,
 		iterations,
 	},
-	loader,
-	seed,
+	?loader,
+	?seed,
 } = props;
 ```
 
-### options
+### candidates
 
-An array of items from which to create a 'choice'
+An array of items from which to create a *choice*.
 
-### populationSize
+### utilities
 
-How big a population
+[Optional]
+
+Functions that define how the algorithm operates.
+
+#### fitness
+
+The fitness function scores solutions.
+
+The default fitness function expects an array of numbers, and will score them by their numerical value.
+
+### select
+
+How many candidates to pick in each choice.
+
+### config
+
+Genetic Algorithm config.
+
+#### populationSize
+
+How big each population should be. A larger population usually means a better end result, but will take longer.
+
+#### iterations
+
+How many generations will be created. A larger population means a better end result, but will take longer.
 
 ## About genetic algorithms
 
