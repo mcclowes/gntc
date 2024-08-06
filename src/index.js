@@ -6,80 +6,118 @@ const debugPrint = (...toPrint) => {
   return DEBUG ? console.log(toPrint) : null;
 };
 
+const getRandomElements = (arr, numElements) => {
+  const shuffled = arr.slice(); // Copy the array
+  let i = arr.length, temp, index;
+
+  // Shuffle array using the Fisher-Yates shuffle algorithm
+  while (i--) {
+    index = Math.floor(Math.random() * (i + 1));
+    temp = shuffled[i];
+    shuffled[i] = shuffled[index];
+    shuffled[index] = temp;
+  }
+
+  const pick = shuffled.slice(0, numElements);
+  pick.sort((a,b) => b - a)
+
+  return pick
+}
+
+const defaultFitness = (choice) => {
+  return choice?.reduce((acc, x) => acc + x, 0) || choice
+}
+
+const defaultGenerateChoice = (select, candidates) => {
+  const pick = getRandomElements(candidates, select)
+  return pick
+}
+
 const createGntc = (props) => {
   const {
-    list,
-    options,
-    populationSize,
-    iterations,
-    utilities,
+    candidates,
+    utilities: {
+      fitness = defaultFitness,
+      crossover,
+      mutate,
+      generateChoice = defaultGenerateChoice,
+      restrictions
+    } = {},
     select,
+    config: {
+      populationSize,
+      iterations,
+    },
     loader,
-    startingSolution
+    seed,
   } = props;
 
   let population = [];
-  let best = { score: -1, choice: startingSolution };
+  let best = { score: -1, choice: seed };
 
   const initialise = () => {
     population = Array(populationSize)
       .fill(0)
-      .map(() => startingSolution ? createStartingSolution() : createSeed());
+      .map(() => seed ? createStartingSolution() : createSeed());
   };
 
-  const createSeed = () => {
-    const choice = utilities.generateChoice(select, options || list);
-    return { score: utilities.fitness(choice, startingSolution), choice };
+  const mutateSolution = (solution) => {
+    return mutate ? mutate(solution) : createSeed();
   };
 
-  const createStartingSolution = () => {
-    const choice = startingSolution;
-    return { score: utilities.fitness(choice, startingSolution), choice };
+  const crossoverSolutions = (solution1, solution2) => {
+    return crossover ? crossover(solution1, solution2) : solution1;
   };
 
-  const iteration = (i) => {
-    if (DEBUG && i % 100 === 0) loader(i);
-
-    population.forEach(solution => {
-      solution.score = utilities.fitness(solution.choice, startingSolution);
-      if (utilities.restrictions && utilities.restrictions.map(restriction => restriction(solution.choice)).some(res => res === false)) {
-        solution.score = 0;
-      }
-    });
-
-    population.sort((a, b) => b.score - a.score);
-    if (best.score < population[0].score) {
-      best = { score: population[0].score, choice: population[0].choice };
-      debugPrint("NEW BEST -> ", best.score, best.choice);
-    }
-    population = evolve(population);
-  };
-
-  const evolve = (population) => {
+  const evolvePopulation = (population) => {
     return population.map((solution, i) => {
       const chance = Math.random();
       if (i > population.length / 4) {
         if (chance > 0.9) {
-          return mutate(solution);
+          return mutateSolution(solution);
         }
         if (chance > 0.7) {
-          return crossover(solution, createSeed());
+          return crossoverSolutions(solution, createSeed());
         }
         if (chance > 0.3) {
           const solution2 = population[Math.floor(Math.abs(Math.random() - Math.random()) * population.length)];
-          return crossover(solution, solution2);
+          return crossoverSolutions(solution, solution2);
         }
       }
       return solution;
     });
   };
 
-  const mutate = (solution) => {
-    return utilities.mutate ? utilities.mutate(solution) : createSeed();
+  const createSeed = () => {
+    const choice = generateChoice(select, candidates);
+    const score = fitness(choice, seed);
+    return { score, choice };
   };
 
-  const crossover = (solution1, solution2) => {
-    return utilities.crossover ? utilities.crossover(solution1, solution2) : solution1;
+  const createStartingSolution = () => {
+    const choice = seed;
+    const score = fitness(choice, seed);
+    return { score, choice };
+  };
+
+  const iteration = (i) => {
+    if (DEBUG && i % 100 === 0) loader(i);
+
+    population.forEach(solution => {
+      solution.score = fitness(solution.choice, seed);
+
+      if (restrictions && restrictions.map(restriction => restriction(solution.choice)).some(res => res === false)) {
+        solution.score = 0;
+      }
+    });
+
+    population.sort((a, b) => b.score - a.score);
+
+    if (best.score < population[0].score) {
+      best = { score: population[0].score, choice: population[0].choice };
+      debugPrint("NEW BEST -> ", best.score, best.choice);
+    }
+    population = evolvePopulation(population);
   };
 
   const runIterations = function* () {

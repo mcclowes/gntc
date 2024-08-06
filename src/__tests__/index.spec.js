@@ -6,41 +6,77 @@ const SELECT = 15;
 
 describe("gntc", () => {
 	describe("runs a genetic algorithm", () => {
-		it("generates a team", () => {
+		describe("Default functions", () => {
+			it("Pick highest values from ordered list", () => {
+				const config = {
+				  candidates: [1, 2, 3, 4, 5],
+				  select: 2,
+				  config: {
+				  	populationSize: 10,
+				  	iterations: 100,
+				  },
+				};
+
+				const gntcGenerator = createGntc(config);
+				const generatorInstance = gntcGenerator();
+
+				let state = generatorInstance.next();
+				while (!state.done) {
+				  //console.log(`Progress: ${(state.value.progress * 100).toFixed(2)}%`);
+				  state = generatorInstance.next();
+				}
+
+				// The last value from the generator when 'done' is true is the best result
+				const finalResult = state.value;
+				console.log('Best result:', finalResult);
+				expect(finalResult.score).toBe(9)
+				expect(finalResult.choice).toEqual([5, 4])
+			});
+
+			it("Pick highest values from unordered list", () => {
+				const config = {
+				  candidates: [17, 2, -3, 254, 99],
+				  select: 2,
+				  config: {
+				  	populationSize: 10,
+				  	iterations: 100,
+				  },
+				};
+
+				const gntcGenerator = createGntc(config);
+				const generatorInstance = gntcGenerator();
+
+				let state = generatorInstance.next();
+				while (!state.done) {
+				  //console.log(`Progress: ${(state.value.progress * 100).toFixed(2)}%`);
+				  state = generatorInstance.next();
+				}
+
+				// The last value from the generator when 'done' is true is the best result
+				const finalResult = state.value;
+				console.log('Best result:', finalResult);
+				expect(finalResult.score).toBe(353)
+				expect(finalResult.choice).toEqual([254,99])
+			});
+		});
+
+		it("Uses custom functions", () => {
 			const utilities = {
-			  fitness: (choice, baseSolution) => {
-			    // Implementation of your fitness function
-			    return Math.random(); // Placeholder
+			  fitness: (choice) => {
+			    return choice.reduce((acc1, x) => 
+			    	acc1 + x.reduce((acc2, y) => acc2 + y, 0), 0
+			    )
 			  },
-			  crossover: (solution1, solution2) => {
-			    // Implementation of your crossover function
-			    return solution1; // Placeholder
-			  },
-			  mutate: (solution) => {
-			    // Implementation of your mutation function
-			    return solution; // Placeholder
-			  },
-			  generateChoice: (select, options) => {
-			    // Generate a choice based on selection criteria and options
-			    return options[Math.floor(Math.random() * options.length)]; // Placeholder
-			  },
-			  restrictions: [
-			    (choice) => {
-			      // Example restriction
-			      return choice % 2 === 0; // Placeholder
-			    }
-			  ]
 			};
 
 			const config = {
-			  list: [1, 2, 3, 4, 5], // Example options list
-			  options: [1, 2, 3, 4, 5],
-			  populationSize: 10,
-			  iterations: 100,
+			  candidates: [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]],
 			  utilities: utilities,
 			  select: 2,
-			  loader: (iteration) => console.log(`Iteration ${iteration}`),
-			  startingSolution: null // Starting solution if any
+			  config: {
+			  	populationSize: 10,
+			  	iterations: 100,
+			  }
 			};
 
 			const gntcGenerator = createGntc(config);
@@ -59,6 +95,10 @@ describe("gntc", () => {
 			// The last value from the generator when 'done' is true is the best result
 			finalResult = state.value;
 			console.log('Best result:', finalResult);
+
+			expect(finalResult.score).toBe(34)
+			expect(finalResult.choice).toContainEqual([9, 10])
+			expect(finalResult.choice).toContainEqual([7, 8])
 		});
 	});
 });
