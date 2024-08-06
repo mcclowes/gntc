@@ -114,19 +114,34 @@ const createGntc = (props) => {
     population.sort((a, b) => b.score - a.score);
 
     if (best.score < population[0].score) {
-      best = { score: population[0].score, choice: population[0].choice };
+      best = { 
+        score: population[0].score, 
+        choice: population[0].choice 
+      };
+
       debugPrint("NEW BEST -> ", best.score, best.choice);
     }
+
     population = evolvePopulation(population);
   };
 
   const runIterations = function* () {
     initialise();
+
     for (let i = 0; i < iterations; i++) {
       iteration(i);
-      yield { progress: i / iterations };
+      yield { 
+        progress: i / iterations,
+        best,
+        population,
+      };
     }
-    return best;
+
+    return {
+      progress: 1,
+      best,
+      population,
+    };
   };
 
   return runIterations;
