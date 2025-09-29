@@ -1,6 +1,12 @@
 import regeneratorRuntime from "regenerator-runtime";
 
-const DEBUG = process.env.DEBUG === true;
+const envDebug =
+  typeof process !== "undefined" && process.env ? process.env.DEBUG : undefined;
+
+const DEBUG =
+  typeof envDebug === "string"
+    ? envDebug.toLowerCase() === "true"
+    : Boolean(envDebug);
 
 const debugPrint = (...toPrint) => {
   return DEBUG ? console.log(toPrint) : null;
@@ -101,7 +107,9 @@ const createGntc = (props) => {
   };
 
   const iteration = (i) => {
-    if (DEBUG && i % 100 === 0) loader(i);
+    if (DEBUG && typeof loader === "function" && i % 100 === 0) {
+      loader(i);
+    }
 
     population.forEach(solution => {
       solution.score = fitness(solution.choice, seed);
