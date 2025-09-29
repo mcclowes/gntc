@@ -1,9 +1,9 @@
 import regeneratorRuntime from "regenerator-runtime";
 
-const DEBUG = process.env.DEBUG === true;
+const DEBUG = process.env.DEBUG === true || process.env.DEBUG === "true";
 
 const debugPrint = (...toPrint) => {
-  return DEBUG ? console.log(toPrint) : null;
+  return DEBUG ? console.log(...toPrint) : null;
 };
 
 const getRandomElements = (arr, numElements) => {
