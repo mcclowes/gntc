@@ -1,161 +1,158 @@
 # gntc
 
-## Using 
+A small, opinionated toolkit for building genetic algorithms in JavaScript.
+
+`gntc` wraps the boilerplate required to evolve a population of solutions, while letting you plug in the parts that are unique to your optimisation problem. The package exports a single factory, `createGntc`, which returns a generator you can iterate to observe the algorithm as it runs.
+
+## Installation
 
 ```sh
 npm install gntc
 ```
 
+## Quick start
 
 ```js
-import { createGntc } from "../index";
-
-const utilities = {
-  fitness: (choice, baseSolution) => {
-    // Implementation of your fitness function
-    return Math.random(); // Placeholder
-  },
-  crossover: (solution1, solution2) => {
-    // Implementation of your crossover function
-    return solution1; // Placeholder
-  },
-  mutate: (solution) => {
-    // Implementation of your mutation function
-    return solution; // Placeholder
-  },
-  generateChoice: (select, options) => {
-    // Generate a choice based on selection criteria and options
-    return options[Math.floor(Math.random() * options.length)]; // Placeholder
-  },
-  restrictions: [
-    (choice) => {
-      // Example restriction
-      return choice % 2 === 0; // Placeholder
-    }
-  ]
-};
+import { createGntc } from "gntc";
 
 const config = {
-  options: [1, 2, 3, 4, 5],
-  populationSize: 10,
-  iterations: 100,
-  utilities: utilities,
+  candidates: [1, 2, 3, 4, 5],
   select: 2,
-  loader: (iteration) => console.log(`Iteration ${iteration}`),
-  startingSolution: null // Starting solution if any
+  config: {
+    populationSize: 10,
+    iterations: 100,
+  },
 };
 
-const gntcGenerator = createGntc(config);
-let finalResult;
+const run = createGntc(config);
+const iterator = run();
 
-// Start the generator
-const generatorInstance = gntcGenerator();
-
-// Use a loop to process each iteration and catch the last returned value
-let state = generatorInstance.next();
-while (!state.done) {
-  //console.log(`Progress: ${(state.value.progress * 100).toFixed(2)}%`);
-  state = generatorInstance.next();
+let step = iterator.next();
+while (!step.done) {
+  const { progress, best } = step.value;
+  console.log(`${(progress * 100).toFixed(0)}% – best score ${best.score}`);
+  step = iterator.next();
 }
 
-// The last value from the generator when 'done' is true is the best result
-finalResult = state.value;
-console.log('Best result:', finalResult);
-````
-
-## Config
-
-```js
-const {
-	?utilities: {
-		fitness,
-		crossover,
-		mutate,
-		generateChoice,
-		restrictions,
-	},
-  candidates,
-	select,
-	config: {
-		populationSize,
-		iterations,
-	},
-	?loader,
-	?seed,
-} = props;
+console.log("Best choice:", step.value.best.choice);
 ```
 
-### candidates
+Running the code above evaluates combinations of the candidate numbers, selecting the pair with the highest sum. The generator yields the state of the population at each iteration so you can report progress, stream updates to a UI, or halt early if you have found a satisfactory solution.
 
-[Optional]
+## API overview
 
-An array of items from which to create a *choice*.
+### `createGntc(config)`
 
-### utilities
+Creates and configures a genetic algorithm run. Calling the returned function produces a generator. Each time you `next()` the generator you receive an object containing:
 
-[Optional]
+- `progress` – a decimal between `0` and `1` representing the proportion of completed iterations.
+- `best` – the highest scoring solution seen so far (`{ score, choice }`).
+- `population` – the full population for the current iteration.
 
-Functions that define how the algorithm operates.
+When the generator finishes it returns the same shape, with `progress: 1` and the final `best` solution.
 
-#### fitness
+### Configuration reference
 
-The fitness function scores solutions.
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `candidates` | `Array` | No | Items from which `generateChoice` can create a solution. If omitted you must provide a custom `generateChoice` utility. |
+| `select` | `number` | Yes | The number of items to include in each generated choice. |
+| `config.populationSize` | `number` | Yes | Number of solutions in each generation. Larger populations can yield better results but take longer to evaluate. |
+| `config.iterations` | `number` | Yes | Number of generations to evolve. |
+| `seed` | `any` | No | Starting solution used as the initial `best` candidate. When supplied, the first population is seeded from this value. |
+| `loader` | `function` | No | Called periodically (every 100 iterations) when `process.env.DEBUG === true`. Useful for logging progress in long-running jobs. |
+| `utilities` | `object` | No | Allows you to override the building blocks of the algorithm (see below). |
 
-The default fitness function expects an array of numbers, and will score them by their numerical value.
+### Utility hooks
 
-### select
+Pass a `utilities` object to customise how the algorithm behaves. All utilities receive the current `seed` as the second argument when appropriate.
 
-How many candidates to pick in each choice.
+| Utility | Signature | Default behaviour |
+| ------- | --------- | ----------------- |
+| `fitness` | `(choice, seed) => number` | Sums the numbers in `choice`. The higher the sum, the higher the fitness score. |
+| `crossover` | `(solutionA, solutionB) => solution` | Returns `solutionA` unchanged. Override to merge two parents into a new child. |
+| `mutate` | `(solution) => solution` | Generates an entirely new solution via `generateChoice`. Override to tweak a single solution. |
+| `generateChoice` | `(select, candidates) => choice` | Randomly samples `select` unique candidates and sorts them in descending order. |
+| `restrictions` | `Array<(choice) => boolean>` | No restrictions by default. If provided, each function should return `true` for valid solutions. Any `false` result forces a fitness score of `0` for that solution. |
 
-### config
+### Interpreting the generator output
 
-Genetic Algorithm config.
+A **solution** is represented as an object of shape `{ score, choice }`, where `score` is the most recent value returned by `fitness` and `choice` is whatever data structure your utilities produce. The `population` array contains one of these solution objects for every member of the current generation.
 
-#### populationSize
+The generator allows you to integrate the algorithm into long-running processes. For example, you can break when the score crosses a threshold:
 
-How big each population should be. A larger population usually means a better end result, but will take longer.
+```js
+const run = createGntc(config);
+const iterator = run();
 
-#### iterations
+let step = iterator.next();
+while (!step.done) {
+  if (step.value.best.score >= 100) {
+    iterator.return();
+    break;
+  }
+  step = iterator.next();
+}
+```
 
-How many generations will be created. A larger population means a better end result, but will take longer.
+## Customisation examples
 
-## About genetic algorithms
+### Provide a custom fitness function
 
-A Genetic Algorithm (GA) is an search heuristic that simulates the naturally occurring processes by which biological evolution occurs ([Goldberg & Holland 1988](https://link.springer.com/article/10.1023/A:1022602019183)). 
+```js
+const utilities = {
+  fitness: (choice) => choice.reduce((acc, team) => acc + team.elo, 0),
+};
 
-They can be used to efficiently find strong solutions to search problems and optimisation problems.
+const run = createGntc({
+  candidates: teams,
+  select: 5,
+  config: { populationSize: 50, iterations: 500 },
+  utilities,
+});
+```
 
-It works by taking an initial pool of (usually random) solutions to that problem, evaluating the performance of those solutions, and combining the best of them to create new solutions. Small mutations are also added, giving GAs the ability to find globally optimal solutions beyond any locally optimal solutions they might find (local minima).
+### Working without predefined candidates
 
-### Genetic algorithm elements
+If your problem does not start from a finite list of candidates, supply your own `generateChoice` implementation:
 
-#### Initial population
+```js
+const run = createGntc({
+  select: 6,
+  utilities: {
+    generateChoice: (select) => Array.from({ length: select }, () => Math.random()),
+  },
+  config: { populationSize: 100, iterations: 1_000 },
+});
+```
 
-Two main approaches:
-- randomly generating a pool of solutions
-- seeding with an existing solution you are looking to improve upon.
+### Enforcing restrictions
 
-We provide an inbuilt utility function for randomising an initial population.
+```js
+const run = createGntc({
+  candidates: players,
+  select: 11,
+  utilities: {
+    restrictions: [
+      // Prevent more than three defenders
+      (choice) => choice.filter((player) => player.position === "DEF").length <= 3,
+    ],
+  },
+  config: { populationSize: 200, iterations: 750 },
+});
+```
 
-#### Fitness function
+Any restriction returning `false` will cause the candidate to be discarded by setting its score to `0`.
 
-This is the a key step. Having generated a new population, they must be ranked. This fitness function provides the ranking, and is what the GA is ultimately optimising for.
+## Background: how the algorithm works
 
-We provide a generic utility function which takes objects and the property to optimise against as parameters.
+Genetic algorithms simulate natural selection to progressively improve candidate solutions ([Goldberg & Holland, 1988](https://link.springer.com/article/10.1023/A:1022602019183)). A run of `gntc` follows these steps:
 
-#### Selection
+1. **Initial population** – either randomised via `generateChoice` or seeded from `seed`.
+2. **Evaluation** – each solution receives a score from your `fitness` function. Restrictions can veto invalid solutions.
+3. **Selection** – the highest scoring solutions are kept at the top of the population.
+4. **Crossover & mutation** – the remainder of the population is evolved via `crossover` and `mutate` to explore new possibilities.
+5. **Iteration** – steps 2–4 are repeated for the configured number of iterations.
 
-The idea of selection phase is to select the fittest individuals and let them pass their genes to the next generation.
+By tuning the utilities and configuration you can apply the same framework to tasks such as squad selection, investment allocation, or any other search problem where you can evaluate how “good” a candidate solution is.
 
-Two pairs of individuals (parents) are selected based on their fitness scores. Individuals with high fitness have more chance to be selected for reproduction.
-
-These parents then have the crossover function applied to them.
-
-#### Crossover
-
-- Crossover point method
-- Full random method
-
-#### Mutation
-
-Finally, we add a chance of mutating any children.
