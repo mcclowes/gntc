@@ -1,10 +1,10 @@
-import regeneratorRuntime from "regenerator-runtime";
+const envDebug =
+  typeof process !== "undefined" && process.env ? process.env.DEBUG : undefined;
 
-const DEBUG = process.env.DEBUG === true;
-
-const debugPrint = (...toPrint) => {
-  return DEBUG ? console.log(toPrint) : null;
-};
+const DEBUG =
+  typeof envDebug === "string"
+    ? envDebug.toLowerCase() === "true"
+    : Boolean(envDebug);
 
 const getRandomElements = (arr, numElements) => {
   const shuffled = arr.slice(); // Copy the array
@@ -101,7 +101,9 @@ const createGntc = (props) => {
   };
 
   const iteration = (i) => {
-    if (DEBUG && i % 100 === 0) loader(i);
+    if (DEBUG && typeof loader === "function" && i % 100 === 0) {
+      loader(i);
+    }
 
     population.forEach(solution => {
       solution.score = fitness(solution.choice, seed);
