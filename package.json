@@ -3,6 +3,7 @@
   "version": "3.1.0",
   "description": "A Genetic Algorithm",
   "main": "lib/index.js",
+  "types": "index.d.ts",
   "directories": {
     "lib": "lib"
   },
@@ -11,10 +12,19 @@
     "url": "git+https://github.com/mcclowes/gntc.git"
   },
   "keywords": [
-    "elo"
+    "genetic-algorithm",
+    "optimization",
+    "evolutionary-algorithm",
+    "metaheuristic",
+    "search-algorithm",
+    "combinatorial-optimization",
+    "selection",
+    "crossover",
+    "mutation"
   ],
   "files": [
-    "lib"
+    "lib",
+    "index.d.ts"
   ],
   "author": "Max Clayton Clowes <contact@mcclowes.com>",
   "license": "ISC",
@@ -26,6 +36,8 @@
     "build": "./node_modules/.bin/babel src --out-dir lib --ignore '**/*.spec.js'",
     "format": "prettier --write src/",
     "format:staged": "pretty-quick --staged --pattern ./src/**",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
     "test": "jest",
     "test:watch": "jest --watch --runInBand --bail"
   },
@@ -35,14 +47,15 @@
     }
   },
   "devDependencies": {
-    "@babel/cli": "^7.12.1",
-    "@babel/core": "^7.12.3",
-    "@babel/preset-env": "^7.12.1",
-    "babel-jest": "^26.6.1",
-    "husky": "^7.0.1",
-    "jest": "^26.6.1",
-    "prettier": "^2.1.2",
-    "pretty-quick": "^3.1.0"
-  },
-  "dependencies": {}
+    "@babel/cli": "^7.25.0",
+    "@babel/core": "^7.25.0",
+    "@babel/preset-env": "^7.25.0",
+    "@eslint/js": "^9.38.0",
+    "babel-jest": "^29.7.0",
+    "eslint": "^9.38.0",
+    "husky": "^9.1.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.0",
+    "pretty-quick": "^4.0.0"
+  }
 }
