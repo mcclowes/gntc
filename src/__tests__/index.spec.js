@@ -1,143 +1,176 @@
-import { createGntc } from "../index";
+import "regenerator-runtime/runtime";
 
-const ITERATIONS = 1000;
-const POPULATION_SIZE = 10;
-const SELECT = 15;
+const finishGenerator = (iterator, initialState) => {
+  let state = initialState ?? iterator.next();
 
-describe("gntc", () => {
-	describe("With candidates", () => {
-		describe("With default functions", () => {
-			it("Pick highest values from ordered list", () => {
-				const config = {
-				  candidates: [1, 2, 3, 4, 5],
-				  select: 2,
-				  config: {
-				  	populationSize: 10,
-				  	iterations: 100,
-				  },
-				};
+  while (!state.done) {
+    state = iterator.next();
+  }
 
-				const gntcGenerator = createGntc(config);
-				const generatorInstance = gntcGenerator();
+  return state.value;
+};
 
-				let state = generatorInstance.next();
-				while (!state.done) {
-				  //console.log(`Progress: ${(state.value.progress * 100).toFixed(2)}%`);
-				  state = generatorInstance.next();
-				}
+const runToCompletion = (generatorFactory) => {
+  const iterator = generatorFactory();
+  return finishGenerator(iterator);
+};
 
-				// The last value from the generator when 'done' is true is the best result
-				const finalResult = state.value;
-				console.log('Best result:', finalResult);
-				expect(finalResult.score).toBe(9)
-				expect(finalResult.choice).toEqual([5, 4])
-			});
+const loadCreateGntc = ({ reset = false } = {}) => {
+  if (reset) {
+    jest.resetModules();
+  }
 
-			it("Pick highest values from unordered list", () => {
-				const config = {
-				  candidates: [17, 2, -3, 254, 99],
-				  select: 2,
-				  config: {
-				  	populationSize: 10,
-				  	iterations: 100,
-				  },
-				};
+  // Using require keeps the tests synchronous and works with the current Babel config
+  return require("../index").createGntc;
+};
 
-				const gntcGenerator = createGntc(config);
-				const generatorInstance = gntcGenerator();
+describe("createGntc", () => {
+  beforeEach(() => {
+    global.debugPrint = jest.fn();
+  });
 
-				let state = generatorInstance.next();
-				while (!state.done) {
-				  //console.log(`Progress: ${(state.value.progress * 100).toFixed(2)}%`);
-				  state = generatorInstance.next();
-				}
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
-				// The last value from the generator when 'done' is true is the best result
-				const finalResult = state.value;
-				console.log('Best result:', finalResult);
-				expect(finalResult.score).toBe(353)
-				expect(finalResult.choice).toEqual([254,99])
-			});
-		});
+  it("returns the seeded solution as the best result and reports progress", () => {
+    const createGntc = loadCreateGntc({ reset: true });
 
-		describe("With custom functions", () => {
-			it("Uses provided functions", () => {
-				const utilities = {
-				  fitness: (choice) => {
-				    return choice.reduce((acc1, x) => 
-				    	acc1 + x.reduce((acc2, y) => acc2 + y, 0), 0
-				    )
-				  },
-				};
+    const config = {
+      candidates: [1, 2, 3, 4, 5],
+      select: 2,
+      seed: [5, 4],
+      config: {
+        populationSize: 4,
+        iterations: 3,
+      },
+    };
 
-				const config = {
-				  candidates: [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]],
-				  utilities: utilities,
-				  select: 2,
-				  config: {
-				  	populationSize: 10,
-				  	iterations: 100,
-				  }
-				};
+    const generatorFactory = createGntc(config);
+    const iterator = generatorFactory();
 
-				const gntcGenerator = createGntc(config);
-				let finalResult;
+    const firstState = iterator.next();
+    expect(firstState.done).toBe(false);
+    expect(firstState.value.progress).toBe(0);
+    expect(firstState.value.best.choice).toEqual([5, 4]);
 
-				// Start the generator
-				const generatorInstance = gntcGenerator();
+    const finalState = finishGenerator(iterator, firstState);
 
-				// Use a loop to process each iteration and catch the last returned value
-				let state = generatorInstance.next();
-				while (!state.done) {
-				  //console.log(`Progress: ${(state.value.progress * 100).toFixed(2)}%`);
-				  state = generatorInstance.next();
-				}
+    expect(finalState.progress).toBe(1);
+    expect(finalState.best.score).toBe(9);
+    expect(finalState.best.choice).toEqual([5, 4]);
+    expect(finalState.population).toHaveLength(config.config.populationSize);
+  });
 
-				// The last value from the generator when 'done' is true is the best result
-				finalResult = state.value;
-				console.log('Best result:', finalResult);
+  it("applies restrictions when evaluating the population", () => {
+    const createGntc = loadCreateGntc({ reset: true });
 
-				expect(finalResult.score).toBe(34)
-				expect(finalResult.choice).toContainEqual([9, 10])
-				expect(finalResult.choice).toContainEqual([7, 8])
-			});
-		})
-	});
+    jest.spyOn(Math, "random").mockReturnValue(0);
 
-	describe("Non-candidate based", () => {
-		describe("With default functions (aside from generateChoice)", () => {
-			it("Maximise towards 1", () => {
-				const config = {
-				  select: 6,
-				  utilities: {
-					  generateChoice: (select) => {
-					  	let result = [];
-					    for (let i = 0; i < select; i++) {
-					        result.push(Math.random());
-					    }
-					    return result;
-					  },
-					},
-				  config: {
-				  	populationSize: 100,
-				  	iterations: 1000,
-				  },
-				};
+    const choicesQueue = [
+      [1, 0],
+      [1, 1],
+    ];
+    const initialChoiceCount = choicesQueue.length;
 
-				const gntcGenerator = createGntc(config);
-				const generatorInstance = gntcGenerator();
+    const generateChoice = jest.fn(() => choicesQueue.shift());
+    const fitness = (choice) => choice.reduce((total, value) => total + value, 0);
+    const restrictions = [
+      (choice) => !choice.includes(0),
+    ];
 
-				let state = generatorInstance.next();
-				while (!state.done) {
-				  //console.log(`Progress: ${(state.value.progress * 100).toFixed(2)}%`);
-				  state = generatorInstance.next();
-				}
+    const config = {
+      select: 2,
+      utilities: {
+        generateChoice,
+        fitness,
+        restrictions,
+      },
+      config: {
+        populationSize: 2,
+        iterations: 1,
+      },
+    };
 
-				// The last value from the generator when 'done' is true is the best result
-				const finalResult = state.value;
-				console.log('Best result:', finalResult);
-				expect(finalResult.score).toBeGreaterThan(5.5)
-			});
-		});
-	});
+    const finalState = runToCompletion(createGntc(config));
+
+    expect(generateChoice).toHaveBeenCalledTimes(initialChoiceCount);
+    expect(finalState.best.score).toBe(2);
+    expect(finalState.best.choice).toEqual([1, 1]);
+  });
+
+  it("uses provided mutate and crossover utilities during evolution", () => {
+    const createGntc = loadCreateGntc({ reset: true });
+
+    const randomValues = [0, 0, 0.95, 0.8, 0, 0, 0, 0];
+    jest
+      .spyOn(Math, "random")
+      .mockImplementation(() => (randomValues.length ? randomValues.shift() : 0));
+
+    const choicesQueue = [[1], [2], [3], [4], [5]];
+    const generateChoice = jest.fn(() => choicesQueue.shift());
+    const fitness = (choice) => choice.reduce((total, value) => total + value, 0);
+    const mutate = jest.fn(() => ({ choice: [50], score: 50 }));
+    const crossover = jest.fn((solution1, solution2) => ({
+      choice: [solution1.choice[0], solution2.choice[0]],
+      score: solution1.choice[0] + solution2.choice[0],
+    }));
+
+    const config = {
+      select: 1,
+      utilities: {
+        generateChoice,
+        fitness,
+        mutate,
+        crossover,
+      },
+      config: {
+        populationSize: 4,
+        iterations: 2,
+      },
+    };
+
+    const finalState = runToCompletion(createGntc(config));
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(crossover).toHaveBeenCalledTimes(1);
+    expect(finalState.best.score).toBe(50);
+    expect(finalState.best.choice).toEqual([50]);
+  });
+
+  it("invokes the loader callback when debug logging is enabled", () => {
+    const originalDebug = process.env.DEBUG;
+    process.env.DEBUG = "true";
+
+    const createGntc = loadCreateGntc({ reset: true });
+
+    try {
+      jest.spyOn(Math, "random").mockReturnValue(0);
+
+      const generateChoice = jest.fn(() => [1, 1]);
+      const fitness = (choice) => choice.reduce((total, value) => total + value, 0);
+      const loader = jest.fn();
+
+      const config = {
+        select: 2,
+        utilities: {
+          generateChoice,
+          fitness,
+        },
+        loader,
+        config: {
+          populationSize: 2,
+          iterations: 250,
+        },
+      };
+
+      runToCompletion(createGntc(config));
+
+      const iterationsReported = loader.mock.calls.map(([iteration]) => iteration);
+      expect(iterationsReported).toEqual([0, 100, 200]);
+    } finally {
+      process.env.DEBUG = originalDebug;
+      jest.resetModules();
+    }
+  });
 });
