@@ -51,7 +51,7 @@
     "@babel/core": "^7.25.0",
     "@babel/preset-env": "^7.25.0",
     "@eslint/js": "^9.38.0",
-    "babel-jest": "^29.7.0",
+    "babel-jest": "^30.2.0",
     "eslint": "^9.38.0",
     "husky": "^9.1.0",
     "jest": "^30.2.0",
