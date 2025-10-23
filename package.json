@@ -33,13 +33,15 @@
   },
   "homepage": "https://github.com/mcclowes/gntc#readme",
   "scripts": {
-    "build": "./node_modules/.bin/babel src --out-dir lib --ignore '**/*.spec.js'",
+    "build": "./node_modules/.bin/babel src --out-dir lib --ignore '**/*.spec.js' --ignore '**/*.stories.*'",
     "format": "prettier --write src/",
     "format:staged": "pretty-quick --staged --pattern ./src/**",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "test": "jest",
-    "test:watch": "jest --watch --runInBand --bail"
+    "test:watch": "jest --watch --runInBand --bail",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "husky": {
     "hooks": {
@@ -50,12 +52,28 @@
     "@babel/cli": "^7.25.0",
     "@babel/core": "^7.25.0",
     "@babel/preset-env": "^7.25.0",
+    "@babel/preset-react": "^7.27.1",
+    "@chromatic-com/storybook": "^4.1.1",
     "@eslint/js": "^9.38.0",
+    "@storybook/addon-a11y": "^9.1.13",
+    "@storybook/addon-docs": "^9.1.13",
+    "@storybook/addon-vitest": "^9.1.13",
+    "@storybook/react-vite": "^9.1.13",
+    "@vitest/browser": "^3.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
     "babel-jest": "^29.7.0",
     "eslint": "^9.38.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-storybook": "^9.1.13",
     "husky": "^9.1.0",
     "jest": "^30.2.0",
+    "playwright": "^1.56.1",
     "prettier": "^3.3.0",
-    "pretty-quick": "^4.0.0"
+    "pretty-quick": "^4.0.0",
+    "prop-types": "^15.8.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "storybook": "^9.1.13",
+    "vitest": "^3.0.0"
   }
 }
