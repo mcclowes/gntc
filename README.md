@@ -39,6 +39,16 @@ console.log("Best choice:", step.value.best.choice);
 
 Running the code above evaluates combinations of the candidate numbers, selecting the pair with the highest sum. The generator yields the state of the population at each iteration so you can report progress, stream updates to a UI, or halt early if you have found a satisfactory solution.
 
+## Interactive playground
+
+Experiment with different configurations of `createGntc` without writing any code by running the Storybook playground:
+
+```sh
+npm run storybook
+```
+
+After the development server starts, open the **Playground/GntcPlayground** story in Storybook to tweak the candidates, config, and utilities and watch how the population evolves.
+
 ## API overview
 
 ### `createGntc(config)`
