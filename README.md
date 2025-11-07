@@ -49,6 +49,32 @@ npm run storybook
 
 After the development server starts, open the **Playground/GntcPlayground** story in Storybook to tweak the candidates, config, and utilities and watch how the population evolves.
 
+## Instrumentation and debugging
+
+`gntc` emits optional diagnostics so you can monitor long-running jobs:
+
+- Set `DEBUG=true` in your environment to enable internal logging whenever a new best solution is discovered.
+- Provide a `loader` function in your config to receive a callback every 100 iterations (including the initial iteration at `0`) while `DEBUG` is enabled. This is useful for forwarding progress to logs, metrics, or other observers.
+
+```sh
+DEBUG=true node examples/run-algorithm.js
+```
+
+```js
+const run = createGntc({
+  select: 5,
+  config: { populationSize: 250, iterations: 10_000 },
+  utilities,
+  loader: (iteration) => {
+    console.info(`Checked ${iteration} generations…`);
+  },
+});
+
+for (const state of run()) {
+  // React to progress updates, stream to a dashboard, etc.
+}
+```
+
 ## API overview
 
 ### `createGntc(config)`
@@ -153,6 +179,36 @@ const run = createGntc({
 ```
 
 Any restriction returning `false` will cause the candidate to be discarded by setting its score to `0`.
+
+## TypeScript support
+
+The published package ships with first-class TypeScript definitions via `index.d.ts`. The types describe the shape of the generator output and allow you to specify the data stored in each solution:
+
+```ts
+import { createGntc, type GntcConfig, type Solution } from 'gntc';
+
+type Team = { name: string; elo: number };
+
+const config: GntcConfig<Team[]> = {
+  candidates: loadTeams(),
+  select: 5,
+  config: { populationSize: 40, iterations: 500 },
+  utilities: {
+    fitness: (choice) => choice.reduce((total, team) => total + team.elo, 0),
+  },
+};
+
+const iterator = createGntc<Team[]>(config)();
+
+let step = iterator.next();
+while (!step.done) {
+  const state: Solution<Team[]> = step.value.best;
+  console.log(state.score);
+  step = iterator.next();
+}
+```
+
+With the generic parameter you retain full IntelliSense for custom `choice` structures, whether they are arrays, objects, or domain-specific classes.
 
 ## Background: how the algorithm works
 
