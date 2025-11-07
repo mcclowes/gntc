@@ -1,10 +1,6 @@
-const envDebug =
-  typeof process !== 'undefined' && process.env ? process.env.DEBUG : undefined;
+const envDebug = typeof process !== 'undefined' && process.env ? process.env.DEBUG : undefined;
 
-const DEBUG =
-  typeof envDebug === 'string'
-    ? envDebug.toLowerCase() === 'true'
-    : Boolean(envDebug);
+const DEBUG = typeof envDebug === 'string' ? envDebug.toLowerCase() === 'true' : Boolean(envDebug);
 
 /**
  * Prints debug messages to console when DEBUG mode is enabled
@@ -24,7 +20,9 @@ const debugPrint = (...args) => {
  */
 const getRandomElements = (arr, numElements) => {
   const shuffled = arr.slice(); // Copy the array
-  let i = arr.length, temp, index;
+  let i = arr.length,
+    temp,
+    index;
 
   // Shuffle array using the Fisher-Yates shuffle algorithm
   while (i--) {
@@ -105,14 +103,11 @@ const createGntc = (props) => {
       crossover,
       mutate,
       generateChoice = defaultGenerateChoice,
-      restrictions
+      restrictions,
     } = {},
     candidates,
     select,
-    config: {
-      populationSize,
-      iterations,
-    },
+    config: { populationSize, iterations },
     loader,
     seed,
   } = props;
@@ -123,7 +118,7 @@ const createGntc = (props) => {
   const initialise = () => {
     population = Array(populationSize)
       .fill(0)
-      .map(() => seed ? createStartingSolution() : createSeed());
+      .map(() => (seed ? createStartingSolution() : createSeed()));
   };
 
   const mutateSolution = (solution) => {
@@ -147,7 +142,8 @@ const createGntc = (props) => {
           return crossoverSolutions(solution, createSeed());
         }
         if (chance > CROSSOVER_WITH_POPULATION_PROBABILITY) {
-          const solution2 = population[Math.floor(Math.abs(Math.random() - Math.random()) * population.length)];
+          const solution2 =
+            population[Math.floor(Math.abs(Math.random() - Math.random()) * population.length)];
           return crossoverSolutions(solution, solution2);
         }
       }
@@ -172,10 +168,13 @@ const createGntc = (props) => {
       loader(i);
     }
 
-    population.forEach(solution => {
+    population.forEach((solution) => {
       solution.score = fitness(solution.choice, seed);
 
-      if (restrictions && restrictions.map(restriction => restriction(solution.choice)).some(res => res === false)) {
+      if (
+        restrictions &&
+        restrictions.map((restriction) => restriction(solution.choice)).some((res) => res === false)
+      ) {
         solution.score = 0;
       }
     });
@@ -183,9 +182,9 @@ const createGntc = (props) => {
     population.sort((a, b) => b.score - a.score);
 
     if (best.score < population[0].score) {
-      best = { 
-        score: population[0].score, 
-        choice: population[0].choice 
+      best = {
+        score: population[0].score,
+        choice: population[0].choice,
       };
 
       debugPrint('NEW BEST -> ', best.score, best.choice);
@@ -199,7 +198,7 @@ const createGntc = (props) => {
 
     for (let i = 0; i < iterations; i++) {
       iteration(i);
-      yield { 
+      yield {
         progress: i / iterations,
         best,
         population,

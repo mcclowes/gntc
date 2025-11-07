@@ -13,7 +13,7 @@ npm install gntc
 ## Quick start
 
 ```js
-import { createGntc } from "gntc";
+import { createGntc } from 'gntc';
 
 const config = {
   candidates: [1, 2, 3, 4, 5],
@@ -34,7 +34,7 @@ while (!step.done) {
   step = iterator.next();
 }
 
-console.log("Best choice:", step.value.best.choice);
+console.log('Best choice:', step.value.best.choice);
 ```
 
 Running the code above evaluates combinations of the candidate numbers, selecting the pair with the highest sum. The generator yields the state of the population at each iteration so you can report progress, stream updates to a UI, or halt early if you have found a satisfactory solution.
@@ -89,27 +89,27 @@ When the generator finishes it returns the same shape, with `progress: 1` and th
 
 ### Configuration reference
 
-| Field | Type | Required | Description |
-| ----- | ---- | -------- | ----------- |
-| `candidates` | `Array` | No | Items from which `generateChoice` can create a solution. If omitted you must provide a custom `generateChoice` utility. |
-| `select` | `number` | Yes | The number of items to include in each generated choice. |
-| `config.populationSize` | `number` | Yes | Number of solutions in each generation. Larger populations can yield better results but take longer to evaluate. |
-| `config.iterations` | `number` | Yes | Number of generations to evolve. |
-| `seed` | `any` | No | Starting solution used as the initial `best` candidate. When supplied, the first population is seeded from this value. |
-| `loader` | `function` | No | Called periodically (every 100 iterations) when `process.env.DEBUG === true`. Useful for logging progress in long-running jobs. |
-| `utilities` | `object` | No | Allows you to override the building blocks of the algorithm (see below). |
+| Field                   | Type       | Required | Description                                                                                                                     |
+| ----------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `candidates`            | `Array`    | No       | Items from which `generateChoice` can create a solution. If omitted you must provide a custom `generateChoice` utility.         |
+| `select`                | `number`   | Yes      | The number of items to include in each generated choice.                                                                        |
+| `config.populationSize` | `number`   | Yes      | Number of solutions in each generation. Larger populations can yield better results but take longer to evaluate.                |
+| `config.iterations`     | `number`   | Yes      | Number of generations to evolve.                                                                                                |
+| `seed`                  | `any`      | No       | Starting solution used as the initial `best` candidate. When supplied, the first population is seeded from this value.          |
+| `loader`                | `function` | No       | Called periodically (every 100 iterations) when `process.env.DEBUG === true`. Useful for logging progress in long-running jobs. |
+| `utilities`             | `object`   | No       | Allows you to override the building blocks of the algorithm (see below).                                                        |
 
 ### Utility hooks
 
 Pass a `utilities` object to customise how the algorithm behaves. All utilities receive the current `seed` as the second argument when appropriate.
 
-| Utility | Signature | Default behaviour |
-| ------- | --------- | ----------------- |
-| `fitness` | `(choice, seed) => number` | Sums the numbers in `choice`. The higher the sum, the higher the fitness score. |
-| `crossover` | `(solutionA, solutionB) => solution` | Returns `solutionA` unchanged. Override to merge two parents into a new child. |
-| `mutate` | `(solution) => solution` | Generates an entirely new solution via `generateChoice`. Override to tweak a single solution. |
-| `generateChoice` | `(select, candidates) => choice` | Randomly samples `select` unique candidates and sorts them in descending order. |
-| `restrictions` | `Array<(choice) => boolean>` | No restrictions by default. If provided, each function should return `true` for valid solutions. Any `false` result forces a fitness score of `0` for that solution. |
+| Utility          | Signature                            | Default behaviour                                                                                                                                                    |
+| ---------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fitness`        | `(choice, seed) => number`           | Sums the numbers in `choice`. The higher the sum, the higher the fitness score.                                                                                      |
+| `crossover`      | `(solutionA, solutionB) => solution` | Returns `solutionA` unchanged. Override to merge two parents into a new child.                                                                                       |
+| `mutate`         | `(solution) => solution`             | Generates an entirely new solution via `generateChoice`. Override to tweak a single solution.                                                                        |
+| `generateChoice` | `(select, candidates) => choice`     | Randomly samples `select` unique candidates and sorts them in descending order.                                                                                      |
+| `restrictions`   | `Array<(choice) => boolean>`         | No restrictions by default. If provided, each function should return `true` for valid solutions. Any `false` result forces a fitness score of `0` for that solution. |
 
 ### Interpreting the generator output
 
@@ -171,7 +171,7 @@ const run = createGntc({
   utilities: {
     restrictions: [
       // Prevent more than three defenders
-      (choice) => choice.filter((player) => player.position === "DEF").length <= 3,
+      (choice) => choice.filter((player) => player.position === 'DEF').length <= 3,
     ],
   },
   config: { populationSize: 200, iterations: 750 },
@@ -221,4 +221,3 @@ Genetic algorithms simulate natural selection to progressively improve candidate
 5. **Iteration** – steps 2–4 are repeated for the configured number of iterations.
 
 By tuning the utilities and configuration you can apply the same framework to tasks such as squad selection, investment allocation, or any other search problem where you can evaluate how “good” a candidate solution is.
-

@@ -107,3 +107,8 @@ dist
 
 *storybook.log
 storybook-static
+
+
+
+lib/
+dist/

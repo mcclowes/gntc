@@ -60,10 +60,7 @@ describe('createGntc', () => {
   it('applies restrictions by zeroing invalid solution scores', async () => {
     jest.spyOn(Math, 'random').mockReturnValue(0);
     const restriction = jest.fn((choice) => choice[0] < 5);
-    const generateChoice = jest
-      .fn()
-      .mockReturnValueOnce([5])
-      .mockReturnValueOnce([1]);
+    const generateChoice = jest.fn().mockReturnValueOnce([5]).mockReturnValueOnce([1]);
 
     const { createGntc } = await import('../index.js');
 
@@ -148,4 +145,3 @@ describe('createGntc', () => {
     expect(loader).toHaveBeenNthCalledWith(3, 200);
   });
 });
-

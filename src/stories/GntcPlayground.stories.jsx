@@ -130,7 +130,8 @@ const strategyLabel = (strategies, key) => strategies[key]?.label ?? key;
 const buildUtilities = (utilitiesArgs, { candidates, select }) => {
   const fitness = fitnessStrategies[utilitiesArgs.fitness]?.fn ?? fitnessStrategies.sum.fn;
   const generateChoice =
-    generateChoiceStrategies[utilitiesArgs.generateChoice]?.fn ?? generateChoiceStrategies.random.fn;
+    generateChoiceStrategies[utilitiesArgs.generateChoice]?.fn ??
+    generateChoiceStrategies.random.fn;
 
   const context = {
     candidates,
@@ -187,13 +188,7 @@ const summariseUtilities = (utilities) =>
   ].join(' \n');
 
 const GntcVisualizer = ({ args }) => {
-  const {
-    candidatesText,
-    select,
-    config,
-    utilities = {},
-    seedText,
-  } = args;
+  const { candidatesText, select, config, utilities = {}, seedText } = args;
 
   const {
     fitness: utilitiesFitness,
@@ -216,7 +211,7 @@ const GntcVisualizer = ({ args }) => {
       mutate: utilitiesMutate ?? '',
       crossover: utilitiesCrossover ?? '',
     }),
-    [utilitiesFitness, utilitiesGenerateChoice, utilitiesMutate, utilitiesCrossover],
+    [utilitiesFitness, utilitiesGenerateChoice, utilitiesMutate, utilitiesCrossover]
   );
 
   const sanitizedConfig = useMemo(
@@ -224,7 +219,7 @@ const GntcVisualizer = ({ args }) => {
       populationSize: Math.max(1, Number.parseInt(config.populationSize, 10) || 1),
       iterations: Math.max(1, Number.parseInt(config.iterations, 10) || 1),
     }),
-    [config.iterations, config.populationSize],
+    [config.iterations, config.populationSize]
   );
 
   const [stateHistory, setStateHistory] = useState([]);
@@ -305,11 +300,25 @@ const GntcVisualizer = ({ args }) => {
         </label>
       </section>
 
-      <section style={{ marginBottom: '1.5rem', display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+      <section
+        style={{
+          marginBottom: '1.5rem',
+          display: 'grid',
+          gap: '1rem',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        }}
+      >
         <div style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '1rem' }}>
           <h4 style={{ marginTop: 0 }}>Best score</h4>
           <div style={{ fontSize: '2rem', fontWeight: 700 }}>{currentState.best?.score ?? '—'}</div>
-          <pre style={{ background: '#f9fafb', padding: '0.5rem', borderRadius: '0.5rem', overflowX: 'auto' }}>
+          <pre
+            style={{
+              background: '#f9fafb',
+              padding: '0.5rem',
+              borderRadius: '0.5rem',
+              overflowX: 'auto',
+            }}
+          >
             {formatChoice(currentState.best?.choice)}
           </pre>
         </div>
@@ -332,7 +341,14 @@ const GntcVisualizer = ({ args }) => {
         </div>
         <div style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '1rem' }}>
           <h4 style={{ marginTop: 0 }}>Utilities</h4>
-          <pre style={{ background: '#f9fafb', padding: '0.5rem', borderRadius: '0.5rem', whiteSpace: 'pre-wrap' }}>
+          <pre
+            style={{
+              background: '#f9fafb',
+              padding: '0.5rem',
+              borderRadius: '0.5rem',
+              whiteSpace: 'pre-wrap',
+            }}
+          >
             {summariseUtilities(utilitiesConfig)}
           </pre>
         </div>
@@ -342,9 +358,20 @@ const GntcVisualizer = ({ args }) => {
         <h3>Population</h3>
         <ol style={{ paddingLeft: '1.5rem', display: 'grid', gap: '0.75rem' }}>
           {currentState.population.map((solution, index) => (
-            <li key={index} style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '0.75rem' }}>
+            <li
+              key={index}
+              style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '0.75rem' }}
+            >
               <div style={{ fontWeight: 600 }}>Score: {solution.score}</div>
-              <pre style={{ margin: '0.5rem 0 0', background: '#f9fafb', padding: '0.5rem', borderRadius: '0.5rem', overflowX: 'auto' }}>
+              <pre
+                style={{
+                  margin: '0.5rem 0 0',
+                  background: '#f9fafb',
+                  padding: '0.5rem',
+                  borderRadius: '0.5rem',
+                  overflowX: 'auto',
+                }}
+              >
                 {formatChoice(solution.choice)}
               </pre>
             </li>

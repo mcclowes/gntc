@@ -1,82 +1,53 @@
-name: Publish Package
+name: Publish to npm
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   release:
     types: [published]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   publish:
-    if: github.event_name != 'release' || github.event.release.prerelease == false
+    name: Publish package
+    if: github.repository_owner == 'mcclowes'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Determine version change
-        id: version_check
-        run: |
-          CURRENT_VERSION=$(jq -r '.version' package.json)
-
-          if [ "${{ github.event_name }}" = "push" ]; then
-            PREVIOUS_SHA="${{ github.event.before }}"
-            if [ "$PREVIOUS_SHA" = "0000000000000000000000000000000000000000" ] || [ -z "$PREVIOUS_SHA" ]; then
-              PREVIOUS_VERSION=""
-            else
-              PREVIOUS_VERSION=$(git show "$PREVIOUS_SHA":package.json 2>/dev/null | jq -r '.version' 2>/dev/null || echo "")
-            fi
-            if [ "$CURRENT_VERSION" = "$PREVIOUS_VERSION" ]; then
-              SHOULD_PUBLISH=false
-            else
-              SHOULD_PUBLISH=true
-            fi
-          else
-            PREVIOUS_VERSION=""
-            SHOULD_PUBLISH=true
-          fi
-
-          echo "current_version=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
-          echo "previous_version=$PREVIOUS_VERSION" >> "$GITHUB_OUTPUT"
-          echo "should_publish=$SHOULD_PUBLISH" >> "$GITHUB_OUTPUT"
-
-      - name: No version change detected
-        if: steps.version_check.outputs.should_publish != 'true'
-        run: |
-          echo "Current version: ${{ steps.version_check.outputs.current_version }}"
-          echo "Previous version: ${{ steps.version_check.outputs.previous_version }}"
-          echo "No version change detected. Skipping publish."
-
-      - name: Set up Node.js
-        if: steps.version_check.outputs.should_publish == 'true'
+      - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
           cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: https://registry.npmjs.org/
 
       - name: Install dependencies
-        if: steps.version_check.outputs.should_publish == 'true'
         run: npm ci
 
       - name: Build package
-        if: steps.version_check.outputs.should_publish == 'true'
         run: npm run build
 
       - name: Run tests
-        if: steps.version_check.outputs.should_publish == 'true'
-        run: npm test
+        run: npm test -- --ci
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ] && [ "$TAG_VERSION" != "v$PACKAGE_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
+            exit 1
+          fi
 
       - name: Publish to npm
-        if: steps.version_check.outputs.should_publish == 'true'
-        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
 
