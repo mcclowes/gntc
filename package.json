@@ -43,12 +43,8 @@
     "test": "jest",
     "test:watch": "jest --watch --runInBand --bail",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run format:staged && npm run build"
-    }
+    "build-storybook": "storybook build",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@babel/cli": "^7.25.0",
