@@ -75,6 +75,12 @@ export interface AlgorithmConfig {
   populationSize: number;
   /** Number of generations to evolve */
   iterations: number;
+  /** Fraction of top solutions preserved unchanged each generation (0-1). Default: 0.25 */
+  eliteRatio?: number;
+  /** Probability of mutation for non-elite solutions (0-1). Default: 0.1 */
+  mutationRate?: number;
+  /** Probability of crossover for non-elite solutions (0-1). Default: 0.6 */
+  crossoverRate?: number;
 }
 
 /**
