@@ -58,12 +58,110 @@ const defaultGenerateChoice = (select, candidates) => {
   return pick;
 };
 
-// Genetic algorithm configuration constants
-const ELITE_POPULATION_RATIO = 0.25; // Top 25% of population preserved
-const MUTATION_PROBABILITY = 0.9; // 10% chance of mutation
-const CROSSOVER_WITH_RANDOM_PROBABILITY = 0.7; // 20% chance of crossover with random
-const CROSSOVER_WITH_POPULATION_PROBABILITY = 0.3; // 40% chance of crossover with population member
+// Default genetic algorithm configuration constants
+const DEFAULT_ELITE_RATIO = 0.25; // Top 25% of population preserved unchanged
+const DEFAULT_MUTATION_RATE = 0.1; // 10% chance of mutation
+const DEFAULT_CROSSOVER_RATE = 0.6; // 60% chance of crossover (20% with random + 40% with population)
 const DEBUG_LOG_INTERVAL = 100; // Log every 100 iterations when DEBUG is enabled
+
+/**
+ * Validates the configuration object and throws descriptive errors for invalid inputs
+ * @param {Object} props - Configuration object to validate
+ * @throws {Error} If required fields are missing or invalid
+ */
+const validateConfig = (props) => {
+  if (!props || typeof props !== 'object') {
+    throw new Error('gntc: config object is required');
+  }
+
+  const { select, config, candidates, utilities } = props;
+
+  // Validate select
+  if (select === undefined || select === null) {
+    throw new Error('gntc: "select" is required - specify how many items to include in each solution');
+  }
+  if (typeof select !== 'number' || !Number.isFinite(select)) {
+    throw new Error(`gntc: "select" must be a finite number, received ${typeof select}`);
+  }
+  if (select < 1) {
+    throw new Error(`gntc: "select" must be at least 1, received ${select}`);
+  }
+
+  // Validate config object
+  if (!config || typeof config !== 'object') {
+    throw new Error('gntc: "config" object is required with populationSize and iterations');
+  }
+
+  const { populationSize, iterations } = config;
+
+  // Validate populationSize
+  if (populationSize === undefined || populationSize === null) {
+    throw new Error('gntc: "config.populationSize" is required');
+  }
+  if (typeof populationSize !== 'number' || !Number.isFinite(populationSize)) {
+    throw new Error(`gntc: "config.populationSize" must be a finite number, received ${typeof populationSize}`);
+  }
+  if (populationSize < 1) {
+    throw new Error(`gntc: "config.populationSize" must be at least 1, received ${populationSize}`);
+  }
+
+  // Validate iterations
+  if (iterations === undefined || iterations === null) {
+    throw new Error('gntc: "config.iterations" is required');
+  }
+  if (typeof iterations !== 'number' || !Number.isFinite(iterations)) {
+    throw new Error(`gntc: "config.iterations" must be a finite number, received ${typeof iterations}`);
+  }
+  if (iterations < 1) {
+    throw new Error(`gntc: "config.iterations" must be at least 1, received ${iterations}`);
+  }
+
+  // Validate candidates/generateChoice relationship
+  const hasCustomGenerateChoice = utilities?.generateChoice && typeof utilities.generateChoice === 'function';
+  if (!hasCustomGenerateChoice && (!candidates || !Array.isArray(candidates) || candidates.length === 0)) {
+    throw new Error(
+      'gntc: "candidates" array is required when not providing a custom generateChoice utility. ' +
+        'Either provide candidates or implement utilities.generateChoice.'
+    );
+  }
+
+  // Validate select doesn't exceed candidates (when using default generateChoice)
+  if (!hasCustomGenerateChoice && candidates && select > candidates.length) {
+    throw new Error(
+      `gntc: "select" (${select}) cannot exceed candidates length (${candidates.length})`
+    );
+  }
+
+  // Validate optional rate parameters
+  const { eliteRatio, mutationRate, crossoverRate } = config;
+
+  if (eliteRatio !== undefined) {
+    if (typeof eliteRatio !== 'number' || !Number.isFinite(eliteRatio)) {
+      throw new Error(`gntc: "config.eliteRatio" must be a finite number, received ${typeof eliteRatio}`);
+    }
+    if (eliteRatio < 0 || eliteRatio > 1) {
+      throw new Error(`gntc: "config.eliteRatio" must be between 0 and 1, received ${eliteRatio}`);
+    }
+  }
+
+  if (mutationRate !== undefined) {
+    if (typeof mutationRate !== 'number' || !Number.isFinite(mutationRate)) {
+      throw new Error(`gntc: "config.mutationRate" must be a finite number, received ${typeof mutationRate}`);
+    }
+    if (mutationRate < 0 || mutationRate > 1) {
+      throw new Error(`gntc: "config.mutationRate" must be between 0 and 1, received ${mutationRate}`);
+    }
+  }
+
+  if (crossoverRate !== undefined) {
+    if (typeof crossoverRate !== 'number' || !Number.isFinite(crossoverRate)) {
+      throw new Error(`gntc: "config.crossoverRate" must be a finite number, received ${typeof crossoverRate}`);
+    }
+    if (crossoverRate < 0 || crossoverRate > 1) {
+      throw new Error(`gntc: "config.crossoverRate" must be between 0 and 1, received ${crossoverRate}`);
+    }
+  }
+};
 
 /**
  * Creates a genetic algorithm generator function
@@ -73,6 +171,9 @@ const DEBUG_LOG_INTERVAL = 100; // Log every 100 iterations when DEBUG is enable
  * @param {Object} props.config - Algorithm configuration
  * @param {number} props.config.populationSize - Size of the population for each generation
  * @param {number} props.config.iterations - Number of generations to evolve
+ * @param {number} [props.config.eliteRatio=0.25] - Fraction of top solutions preserved each generation (0-1)
+ * @param {number} [props.config.mutationRate=0.1] - Probability of mutation for non-elite solutions (0-1)
+ * @param {number} [props.config.crossoverRate=0.6] - Probability of crossover for non-elite solutions (0-1)
  * @param {any} [props.seed] - Optional initial solution to seed the population
  * @param {Function} [props.loader] - Optional function called periodically during execution (when DEBUG=true)
  * @param {Object} [props.utilities] - Custom utility functions
@@ -97,6 +198,8 @@ const DEBUG_LOG_INTERVAL = 100; // Log every 100 iterations when DEBUG is enable
  * }
  */
 const createGntc = (props) => {
+  validateConfig(props);
+
   const {
     utilities: {
       fitness = defaultFitness,
@@ -107,7 +210,13 @@ const createGntc = (props) => {
     } = {},
     candidates,
     select,
-    config: { populationSize, iterations },
+    config: {
+      populationSize,
+      iterations,
+      eliteRatio = DEFAULT_ELITE_RATIO,
+      mutationRate = DEFAULT_MUTATION_RATE,
+      crossoverRate = DEFAULT_CROSSOVER_RATE,
+    },
     loader,
     seed,
   } = props;
@@ -130,18 +239,23 @@ const createGntc = (props) => {
   };
 
   const evolvePopulation = (population) => {
-    const eliteSize = Math.floor(population.length * ELITE_POPULATION_RATIO);
+    const eliteSize = Math.floor(population.length * eliteRatio);
+    // Split crossover rate: 1/3 with random, 2/3 with population member
+    const crossoverWithRandomThreshold = mutationRate + crossoverRate * 0.33;
+    const crossoverWithPopulationThreshold = mutationRate + crossoverRate;
+
     return population.map((solution, i) => {
-      const chance = Math.random();
-      // Preserve elite solutions, evolve the rest
-      if (i > eliteSize) {
-        if (chance > MUTATION_PROBABILITY) {
+      // Preserve elite solutions (top performers), evolve the rest
+      if (i >= eliteSize) {
+        const chance = Math.random();
+        if (chance < mutationRate) {
           return mutateSolution(solution);
         }
-        if (chance > CROSSOVER_WITH_RANDOM_PROBABILITY) {
+        if (chance < crossoverWithRandomThreshold) {
           return crossoverSolutions(solution, createSeed());
         }
-        if (chance > CROSSOVER_WITH_POPULATION_PROBABILITY) {
+        if (chance < crossoverWithPopulationThreshold) {
+          // Select partner biased towards higher-ranked solutions
           const solution2 =
             population[Math.floor(Math.abs(Math.random() - Math.random()) * population.length)];
           return crossoverSolutions(solution, solution2);

@@ -89,15 +89,18 @@ When the generator finishes it returns the same shape, with `progress: 1` and th
 
 ### Configuration reference
 
-| Field                   | Type       | Required | Description                                                                                                                     |
-| ----------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `candidates`            | `Array`    | No       | Items from which `generateChoice` can create a solution. If omitted you must provide a custom `generateChoice` utility.         |
-| `select`                | `number`   | Yes      | The number of items to include in each generated choice.                                                                        |
-| `config.populationSize` | `number`   | Yes      | Number of solutions in each generation. Larger populations can yield better results but take longer to evaluate.                |
-| `config.iterations`     | `number`   | Yes      | Number of generations to evolve.                                                                                                |
-| `seed`                  | `any`      | No       | Starting solution used as the initial `best` candidate. When supplied, the first population is seeded from this value.          |
-| `loader`                | `function` | No       | Called periodically (every 100 iterations) when `process.env.DEBUG === true`. Useful for logging progress in long-running jobs. |
-| `utilities`             | `object`   | No       | Allows you to override the building blocks of the algorithm (see below).                                                        |
+| Field                   | Type       | Required | Default | Description                                                                                                                     |
+| ----------------------- | ---------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `candidates`            | `Array`    | No       | —       | Items from which `generateChoice` can create a solution. If omitted you must provide a custom `generateChoice` utility.         |
+| `select`                | `number`   | Yes      | —       | The number of items to include in each generated choice.                                                                        |
+| `config.populationSize` | `number`   | Yes      | —       | Number of solutions in each generation. Larger populations can yield better results but take longer to evaluate.                |
+| `config.iterations`     | `number`   | Yes      | —       | Number of generations to evolve.                                                                                                |
+| `config.eliteRatio`     | `number`   | No       | `0.25`  | Fraction of top solutions preserved unchanged each generation (0–1).                                                            |
+| `config.mutationRate`   | `number`   | No       | `0.1`   | Probability of mutation for non-elite solutions (0–1).                                                                          |
+| `config.crossoverRate`  | `number`   | No       | `0.6`   | Probability of crossover for non-elite solutions (0–1). Split between random (⅓) and population member (⅔).                    |
+| `seed`                  | `any`      | No       | —       | Starting solution used as the initial `best` candidate. When supplied, the first population is seeded from this value.          |
+| `loader`                | `function` | No       | —       | Called periodically (every 100 iterations) when `process.env.DEBUG === true`. Useful for logging progress in long-running jobs. |
+| `utilities`             | `object`   | No       | —       | Allows you to override the building blocks of the algorithm (see below).                                                        |
 
 ### Utility hooks
 
@@ -180,6 +183,31 @@ const run = createGntc({
 
 Any restriction returning `false` will cause the candidate to be discarded by setting its score to `0`.
 
+### Tuning algorithm parameters
+
+Fine-tune the evolution process by adjusting `eliteRatio`, `mutationRate`, and `crossoverRate`:
+
+```js
+const run = createGntc({
+  candidates: items,
+  select: 5,
+  config: {
+    populationSize: 100,
+    iterations: 500,
+    eliteRatio: 0.1, // Only top 10% preserved (more exploration)
+    mutationRate: 0.2, // 20% mutation rate (more variation)
+    crossoverRate: 0.7, // 70% crossover rate (aggressive breeding)
+  },
+});
+```
+
+**Tips for tuning:**
+
+- **Higher `eliteRatio`** (e.g., 0.5): Faster convergence but may get stuck in local optima
+- **Lower `eliteRatio`** (e.g., 0.1): More exploration but slower convergence
+- **Higher `mutationRate`**: More diversity, helps escape local optima
+- **Higher `crossoverRate`**: More genetic recombination, good for combining successful traits
+
 ## TypeScript support
 
 The published package ships with first-class TypeScript definitions via `index.d.ts`. The types describe the shape of the generator output and allow you to specify the data stored in each solution:
@@ -209,6 +237,28 @@ while (!step.done) {
 ```
 
 With the generic parameter you retain full IntelliSense for custom `choice` structures, whether they are arrays, objects, or domain-specific classes.
+
+## Error handling
+
+`gntc` validates configuration at initialization and throws descriptive errors for common mistakes:
+
+```js
+// Missing required field
+createGntc({ config: { populationSize: 10, iterations: 10 } });
+// → Error: gntc: "select" is required - specify how many items to include in each solution
+
+// Invalid value
+createGntc({ select: 0, config: { populationSize: 10, iterations: 10 } });
+// → Error: gntc: "select" must be at least 1, received 0
+
+// Missing candidates without custom generateChoice
+createGntc({ select: 2, config: { populationSize: 10, iterations: 10 } });
+// → Error: gntc: "candidates" array is required when not providing a custom generateChoice utility
+
+// Rate out of bounds
+createGntc({ candidates: [1, 2], select: 1, config: { populationSize: 10, iterations: 10, eliteRatio: 1.5 } });
+// → Error: gntc: "config.eliteRatio" must be between 0 and 1, received 1.5
+```
 
 ## Background: how the algorithm works
 
