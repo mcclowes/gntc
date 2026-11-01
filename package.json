@@ -63,7 +63,7 @@
     "@storybook/react-vite": "^9.1.13",
     "@vitest/browser": "^4.0.8",
     "@vitest/coverage-v8": "^4.0.8",
-    "babel-jest": "^29.7.0",
+    "babel-jest": "^30.5.2",
     "eslint": "^9.38.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-storybook": "^9.1.13",
